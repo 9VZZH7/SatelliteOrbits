@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "satelliteorbits"
+version = "0.1.0"
+description = "Simulation of orbits, with numerical methods, and based on the solar system, with an additional satellite"
+authors = ["Pedro Blöß Braga <50064364+pedroblossbraga@users.noreply.github.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+pandas = "^2.2.2"
+matplotlib = "^3.8.4"
+seaborn = "^0.13.2"
+plotly = "^5.22.0"
+jupyter = "^1.0.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
