@@ -1,4 +1,4 @@
-First code, just compute position given the data and the explicit solution, seems to work:
+# First code, just compute position given the data and the explicit solution, seems to work:
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -45,7 +45,7 @@ plt.grid(True)
 plt.show()
 
 ####################################################################################################################
-Second code, trying to use a built in solver, but it doesn't really work as I would like it to..
+# Second code, trying to use a built in solver, but it doesn't really work as I would like it to..
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
