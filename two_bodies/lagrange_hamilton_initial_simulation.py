@@ -64,11 +64,11 @@ k = G * (m1 * m2)
 l = mu * r0**2 * theta0_dt
 
 # Define the orbit equations
-def orbit_equations(theta, y):
-    u, v_r = y
-    du_dtheta = v_r
-    dv_r_dtheta = ((l**2)/(mu*k)) - u
-    return [du_dtheta, dv_r_dtheta]
+def orbit_equations(theta_values, y):
+    u1,u2 = y
+    du1 = u2
+    du2 = ((l**2)/(mu*k)) - u1
+    return [du1, du2]
 
 # Set up theta grid
 t_full_revolution = (2 * np.pi * mu * r0**2) / l
@@ -79,17 +79,18 @@ theta_values = (l / (mu * r0**2)) * t_span
 
 # Calculate initial condition for u
 u0 = 1 / r0
+du0 = 0
 
 # Solve the ODE
-sol = solve_ivp(orbit_equations, [theta_values[0], theta_values[-1]], [u0, 0], t_eval=theta_values)
+sol = solve_ivp(orbit_equations, [theta_values[0], theta_values[-1]], [u0, du0], t_eval=theta_values)
 
 # Extract solutions
-u_values, v_r_values = sol.y
-r_values = 1 / u_values
-print(r_values)
+u1_values, u2_values = sol.y
+r_values = 1 / u1_values
+
 # Calculate Cartesian coordinates from polar coordinates
-x_values = r_values * np.cos(sol.t)
-y_values = r_values * np.sin(sol.t)
+x_values = r_values * np.cos(theta_values)
+y_values = r_values * np.sin(theta_values)
 z_values = np.zeros_like(x_values)  # Z-component is 0
 
 # Plot the orbit in 3D
