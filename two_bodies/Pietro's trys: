@@ -44,7 +44,7 @@ plt.legend()
 plt.grid(True)
 plt.show()
 
-
+####################################################################################################################
 Second code, trying to use a built in solver, but it doesn't really work as I would like it to..
 import numpy as np
 import matplotlib.pyplot as plt
