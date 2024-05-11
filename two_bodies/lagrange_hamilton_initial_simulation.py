@@ -52,7 +52,7 @@ theta_values = (l / (mu * r0^2)) * t_span;
 
 %set up ODE;
 s = (mu*k)/(l^2);
-F=@(t,y) [y(2);0.11-y(1)];
+F=@(t,y) [y(2);s-y(1)];
 [t,y] = ode45(F,theta_values,[1/r0; 0]);
 
 figure
@@ -60,7 +60,7 @@ plot(t,y)
 
 %extract solution 
 r = zeros(slices,1);
-for i = 1:slices-1
+for i = 1:slices
     r(i)=1/(y(i,1));
 end
 %back to cartesian coordinates
