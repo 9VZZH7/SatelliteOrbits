@@ -33,7 +33,7 @@ figure
 plot(X,Y)
 
 ######################################################################
-#MATLAB CODE WITH SOLVER, DOES NOT WORK FOR SOME REASON (THE SOLUTION IS WRONG)
+#MATLAB CODE WITH SOLVER, WORKS!!
 %initial data
 r0 = 1.496;
 theta0_dt = 0.002053;
