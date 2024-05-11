@@ -23,16 +23,36 @@ class body:
         if fig is None:
             plt.plot(self.x[0], self.x[1], 'go')
 
+class ode_algorithm:
+
+    def __init__(self, approach, tau, steps, ode):
+        self.approach = approach
+        self.ode = ode
+        self.tau = tau
+        self.steps = steps
+
+    def __call__(self, sun, *bodies):
+        func = getattr(self, self.approach)
+        func(sun, *bodies)
+
+    def fwd(self, sun, *bodies):
+        N = len(bodies)
+        for i in range(self.steps):
+            ret = self.ode(sun, *bodies)
+            [body.update(val[:2], val[2:], self.tau) for val, body in zip(np.split(ret, N), bodies)]
+            [body.plot() for body in bodies]
+
 class solver:
 
-    def __init__(self, _type, stepsize):
+    def __init__(self, _type, tau):
         self.type = _type
-        self.stepsize = stepsize
+        self.tau = tau
 
-    def __call__(self, approach, sun, *bodies):
-        if approach == 'newton':
+    def __call__(self, approach, steps, sun, *bodies):
+        if approach == 'fwd':
             ode = self.newton_ode
-            return ode(sun, bodies[0])
+            fwd_euler = ode_algorithm('fwd', self.tau, steps, ode)
+            return fwd_euler(sun, bodies[0])
 
     def newton_ode(self, sun, body):
         rhs = np.concatenate([body.x, body.v])
@@ -74,8 +94,5 @@ class solver:
 if __name__ == "__main__":
     earth = body(1, [1, 0], [0, 1])
     sun = body(339000, [0,0], [0,0])
-    sol = solver('newton', 10)
-    for i in range(100000):
-        ret = sol('newton', sun, earth)
-        earth.update(ret[:2], ret[2:], 0.001)
-        earth.plot()
+    sol = solver('newton', 0.001)
+    ret = sol('fwd', 1000, sun, earth)
