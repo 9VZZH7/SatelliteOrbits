@@ -46,7 +46,7 @@ l = mu * (r0^2) * theta0_dt;
 
 % Calculate theta values based on time
 slices = 100;
-t_full_revolution = (2 * pi * mu * r0^2) / l;
+t_full_revolution = 2*(2 * pi * mu * r0^2) / l;
 t_span = linspace(0, t_full_revolution, slices);
 theta_values = (l / (mu * r0^2)) * t_span;
 
@@ -60,7 +60,7 @@ plot(t,y)
 
 %extract solution 
 r = zeros(slices,1);
-for i = 1:slices
+for i = 1:slices-1
     r(i)=1/(y(i,1));
 end
 %back to cartesian coordinates
@@ -74,7 +74,9 @@ end
 %plot
 figure
 plot(X,Y)
+axis equal
 
+    
 
 
 # First code, just compute position given the data and the explicit solution, seems to work:
