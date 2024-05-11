@@ -91,7 +91,7 @@ class solver:
 if __name__ == "__main__":
     earth = body(1, [1, 0], [0, 1])
     sun = body(333000, [0,0], [0,0])
-    jupiter = body(1000, [20,0], [0,1])
-    sol = solver('newton', 0.1)
-    ret = sol('fwd', 1000, sun, earth, jupiter)
+    jupiter = body(1000, [20,0], [0,0.25])
+    sol = solver('newton', 0.01)
+    ret = sol('fwd', 10000, sun, earth)
     plt.plot(0,0, 'rx')
