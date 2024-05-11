@@ -1,3 +1,82 @@
+#MATLAB CODE1 with given solution from ODE Online Solver: https://www.wolframalpha.com/widgets/view.jsp?id=17adb9cfd6c67a920240e6db6fd8e8a1
+r0 = 1.496;
+theta0_dt = 0.002053;
+m1 = 1;
+m2 = 332.94604;
+G = 6.6743e-8;
+mu = (m1 * m2) / (m1 + m2);
+k = G * (m1 * m2);
+l = mu * (r0^2) * theta0_dt;
+n = (mu*k)/(l^2)
+% Calculate theta values based on time
+slices = 100;
+t_full_revolution = (2 * pi * mu * r0^2) / l;
+t_span = linspace(0, t_full_revolution, slices);
+theta_values = (l / (mu * r0^2)) * t_span;
+
+%Computed solution Acos(x)+mu*k/l^2
+r=zeros(slices,1);
+s = (l^2)/(mu*k);
+A = 0.667349;    %Update with correct value, if we could effectively solve the ODE it would work
+epsilon = ((A*l^2)/(mu*k))
+for i =1:slices
+    r(i) = s*(1/(1+epsilon*cos(theta_values(i))));
+end
+
+X=zeros(slices,1);
+Y=zeros(slices,1);
+for i=1:slices
+    X(i)=r(i)*cos(theta_values(i));
+    Y(i)=r(i)*sin(theta_values(i));
+end
+figure
+plot(X,Y)
+
+######################################################################
+#MATLAB CODE WITH SOLVER, DOES NOT WORK FOR SOME REASON (THE SOLUTION IS WRONG)
+%initial data
+r0 = 1.496;
+theta0_dt = 0.002053;
+m1 = 1;
+m2 = 332.94604;
+G = 6.6743e-8;
+mu = (m1 * m2) / (m1 + m2);
+k = G * (m1 * m2);
+l = mu * (r0^2) * theta0_dt;
+
+% Calculate theta values based on time
+slices = 100;
+t_full_revolution = (2 * pi * mu * r0^2) / l;
+t_span = linspace(0, t_full_revolution, slices);
+theta_values = (l / (mu * r0^2)) * t_span;
+
+%set up ODE;
+s = (mu*k)/(l^2);
+F=@(t,y) [y(2);0.11-y(1)];
+[t,y] = ode45(F,theta_values,[1/r0; 0]);
+
+figure
+plot(t,y)
+
+%extract solution 
+r = zeros(slices,1);
+for i = 1:slices-1
+    r(i)=1/(y(i,1));
+end
+%back to cartesian coordinates
+X = zeros(slices,1);
+Y = zeros(slices,1);
+Z = zeros(slices,1);
+for i = 1:slices
+    X(i)=r(i)*cos(theta_values(i));
+    Y(i)=r(i)*sin(theta_values(i));
+end
+%plot
+figure
+plot(X,Y)
+
+
+
 # First code, just compute position given the data and the explicit solution, seems to work:
 import numpy as np
 import matplotlib.pyplot as plt
