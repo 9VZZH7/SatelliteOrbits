@@ -2,8 +2,6 @@ import numpy as np
 from scipy import integrate
 from matplotlib import pyplot as plt
 
-def two_bodies():
-    pass
 
 class body:
 
@@ -17,6 +15,9 @@ class body:
 
     def get_forces(self, body):
         return (1 + 1/body.mass) * (body.x - self.x) / self.get_dist(body)**3
+
+    def get_energy(self):
+        return 0.5 * (self.mass * sum(self.v ** 2))
 
     def update(self, x, v, tau):
         self.x = self.x + np.array(x) * tau
