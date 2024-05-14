@@ -9,6 +9,8 @@ class body:
         self.mass = mass
         self.x = np.array(x_0)
         self.v = np.array(v_0)
+        self.x_old = np.array(x_0)
+        self.v_old = np.array(v_0)
 
     def get_dist(self, _body):
         return np.sqrt(sum((self.x - _body.x)**2))
@@ -19,9 +21,14 @@ class body:
     def get_energy(self):
         return 0.5 * (self.mass * sum(self.v ** 2))
 
-    def update(self, x, v, tau):
+    def update(self, x, v, tau, use_old = False):
         self.x = self.x + np.array(x) * tau
         self.v = self.v + np.array(v) * tau
+        if use_old:
+            self.x = self.x_old + np.array(x) * tau
+            self.v = self.v_old + np.array(v) * tau
+            self.x_old = self.x.copy()
+            self.v_old = self.v.copy()
 
     def martin(self, tau):
         alpha = mu / np.sqrt(sum(self.x ** 2)) ** 3
@@ -78,19 +85,43 @@ class ode_algorithm:
             if not i % 100:
                 bodies[1].plot()
 
+    def runge_kutta(self, a, b, c, *bodies):
+        N = len(bodies)
+        order = len(b)
+        k = np.zeros(order, dtype = object)
+        for s in range(self.steps):
+            for j in range(order):
+                k[j] = self.ode(*bodies)
+                ret_x = np.split(k[j][:2*N], N)
+                ret_v = np.split(k[j][2*N:], N)
+                k[j] = np.concatenate([np.concatenate([x, v]) for x,v in zip(ret_x, ret_v)])
+                new = np.zeros(k[0].shape)
+                for i in range(j):
+                    new = new + a[j, i] * k[i]
+                [_body.update(val[:2], val[2:], self.tau) for val, _body in zip(np.split(new, N), bodies)]
+            final = np.zeros_like(k[0])
+            for i in range(order):
+                final = final + b[i] * k[i]
+            [_body.update(val[:2], val[2:], self.tau, True) for val, _body in zip(np.split(final, N), bodies)]
+            if not s % 200:
+                [_body.plot() for _body in bodies]
+
 class solver:
 
     def __init__(self, _type, tau):
         self.type = _type
         self.tau = tau
 
-    def __call__(self, approach, steps, *bodies):
+    def __call__(self, approach, steps, *bodies, rk_params = None):
         if approach == 'fwd':
             ode = self.newton_ode_n
         elif approach == 'bwd':
             ode = self.newton_ode_n
         elif approach == 'martin':
             ode = None
+        elif approach == 'rk':
+            ode = self.newton_ode_n
+            return ode_algorithm('runge_kutta', self.tau, steps, ode)(rk_params['a'], rk_params['b'], rk_params['c'], *bodies)
         return ode_algorithm(approach, self.tau, steps, ode)(*bodies)
 
     def newton_ode(self, *bodies):
@@ -98,10 +129,7 @@ class solver:
         lhs = np.zeros((4,))
         lhs[:2] = rhs[-2:]
 
-        # r3 = bodies[1].get_dist(bodies[0]) ** 3
-
-        # mrel = body.mass/sun.mass
-        lhs[-2:] = bodies[1].get_forces(bodies[0]) # (1+mrel)*rhs[:2]/r3
+        lhs[-2:] = bodies[1].get_forces(bodies[0])
 
         return lhs
 
@@ -111,11 +139,8 @@ class solver:
         lhs = np.zeros(((N) * 4,))
         lhs[:2*N] = rhs[-2*N:]
 
-        # mrel = np.array([_body.mass for _body in bodies])/bodies[0].mass
-
         for i in range(0, N):
             fixed_body = bodies[i]
-
             lhs[2*N + 2*i:2*N + 2*(i+1)] = np.sum([fixed_body.get_forces(_body) for _body in bodies if _body != fixed_body], 0)
 
         return lhs
@@ -126,7 +151,11 @@ if __name__ == "__main__":
     G = 6.67e-11/((1.52e11)**3) * 86400**2
     earth = body(5.976e24, [1 * (1 - 0.0167), 0], [0, np.sqrt((mu * (1.0167))/(1 * (1 - 0.0167)))])
     sun = body(2e30, [0,0], [0,0])
-    jupiter = body(1000, [20,0], [0,0.25])
-    sol = solver('newton', 0.005)
-    ret = sol('martin', 100000, sun, earth)
+    jupiter = body(1.8987e27, [5.19 * (1 - 0.0167),0], [0, np.sqrt((mu * (1.0167))/(5.19 * (1 - 0.0167)))])
+    sol = solver('newton', 0.05)
+    a = np.array([[0,0,0,0],[0.5,0,0,0],[0,0.5,0,0],[0,0,1,0]])
+    b = np.array([1/6,1/3,1/3,1/6])
+    c = np.array([0, 0.5, 0.5, 1])
+    rk = {'a': a, 'b': b, 'c': c}
+    ret = sol('rk', 30000, sun, earth, jupiter, rk_params = rk)
     plt.plot(0,0, 'rx')
