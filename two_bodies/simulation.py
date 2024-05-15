@@ -60,9 +60,6 @@ class ode_algorithm:
         e = []
         for i in range(self.steps):
             ret = self.ode(*bodies)
-            ret_x = np.split(ret[:2*N], N)
-            ret_v = np.split(ret[2*N:], N)
-            ret = np.concatenate([np.concatenate([x, v]) for x,v in zip(ret_x, ret_v)])
             [_body.update(val[:2], val[2:], self.tau) for val, _body in zip(np.split(ret, N), bodies)]
             if not i % self.plot and i > 0:
                 [_body.plot() for _body in bodies]
@@ -76,9 +73,6 @@ class ode_algorithm:
             ret_old = np.zeros(N*4)
             for _ in range(20):
                 ret = self.ode(*bodies)
-                ret_x = np.split(ret[:2*N], N)
-                ret_v = np.split(ret[2*N:], N)
-                ret = np.concatenate([np.concatenate([x, v]) for x,v in zip(ret_x, ret_v)])
                 [_body.update(val[:2] - old_val[:2], val[2:] - old_val[2:], self.tau) for val, old_val, _body in zip(np.split(ret, N), np.split(ret_old, N), bodies)]
                 ret_old = ret
             if not i % self.plot:
@@ -98,9 +92,6 @@ class ode_algorithm:
         for s in range(self.steps):
             for j in range(order):
                 k[j] = self.ode(*bodies)
-                ret_x = np.split(k[j][:2*N], N)
-                ret_v = np.split(k[j][2*N:], N)
-                k[j] = np.concatenate([np.concatenate([x, v]) for x,v in zip(ret_x, ret_v)])
                 new = np.zeros(k[0].shape)
                 for i in range(j):
                     new = new + a[j, i] * k[i]
@@ -134,41 +125,50 @@ class solver:
         return ode_algorithm(approach, self.tau, steps, ode, plot = plot)(*bodies)
 
     def newton_ode(self, *bodies):
-        rhs = np.concatenate([bodies[1].x, bodies[1].v])
-        lhs = np.zeros((4,))
-        lhs[:2] = rhs[-2:]
+        N = len(bodies)
+        rhs = np.concatenate([np.concatenate([_body.x, _body.v]) for _body in bodies])
+        lhs = np.roll(rhs, -2)
 
-        lhs[-2:] = bodies[1].get_forces(bodies[0])
+        for i in range(0, N):
+            fixed_body = bodies[i]
+            lhs[i * 4 + 2:i * 4 + 4] = np.sum([fixed_body.get_forces(_body) for _body in bodies if _body != fixed_body], 0)
 
         return lhs
 
     def newton_ode_n(self, *bodies):
         N = len(bodies)
-        rhs = np.concatenate([np.concatenate([_body.x for _body in bodies]), np.concatenate([_body.v for _body in bodies])])
-        lhs = np.zeros(((N) * 4,))
-        lhs[:2*N] = rhs[-2*N:]
+        rhs = np.concatenate([np.concatenate([_body.x, _body.v]) for _body in bodies])
+        lhs = np.roll(rhs, -2)
 
         for i in range(0, N):
             fixed_body = bodies[i]
-            lhs[2*N + 2*i:2*N + 2*(i+1)] = np.sum([fixed_body.get_forces(_body) for _body in bodies if _body != fixed_body], 0)
+            lhs[i * 4 + 2:i * 4 + 4] = np.sum([fixed_body.get_forces(_body) for _body in bodies if _body != fixed_body], 0)
 
         return lhs
 
 
 if __name__ == "__main__":
     plt.close('all')
+
+    # Constants
     mu = 1.33e20/((1.52e11)**3) * 86400**2
     G = 6.67e-11/((1.52e11)**3) * 86400**2 * 5.976e24
+
+    # Bodies
     earth = body(1, [1 * (1 - 0.0167), 0], [0, np.sqrt((mu * (1.0167))/(1 * (1 - 0.0167)))])
     sun = body(2e30/5.976e24, [0,0], [0,0])
     jupiter = body(1.8987e27/5.976e24, [5.19 * (1 - 0.0167),0], [0, np.sqrt((mu * (1.0167))/(5.19 * (1 - 0.0167)))])
+
+    # Setup
     sol = solver('newton', 0.05)
     a = np.array([[0,0,0,0],[0.5,0,0,0],[0,0.5,0,0],[0,0,1,0]])
     b = np.array([1/6,1/3,1/3,1/6])
     c = np.array([0, 0.5, 0.5, 1])
     rk = {'a': a, 'b': b, 'c': c}
-    plot = 1000 # np.inf
+    plot = 10 # np.inf
+
+    # Run
     if plot < np.inf:
         plt.plot(0,0, 'rx')
         plt.pause(0.01)
-    ret = sol('rk', 50000, sun, earth, rk_params = rk, plot = plot)
+    ret = sol('fwd', 5000, sun, earth, jupiter, rk_params = rk, plot = plot)
