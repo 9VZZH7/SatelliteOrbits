@@ -5,18 +5,30 @@ from matplotlib import pyplot as plt
 
 class body:
 
-    def __init__(self, mass, x_0, v_0):
+    def __init__(self, mass, x_0, v_0, can_move = False):
         self.mass = mass
         self.x = np.array(x_0)
         self.v = np.array(v_0)
         self.x_old = np.array(x_0)
         self.v_old = np.array(v_0)
+        self.can_move = can_move
+
+    def set_thrust(self, thrust_func):
+        self.thrust = thrust_func
 
     def get_dist(self, _body):
         return np.sqrt(sum((self.x - _body.x)**2))
 
-    def get_forces(self, _body):
+    def get_force(self, _body):
         return G * _body.mass * (_body.x - self.x) / self.get_dist(_body)**3
+
+    def get_forces(self, *bodies):
+        if not self.can_move:
+            return np.sum([self.get_force(_body) for _body in bodies if _body != self], 0)
+        else:
+            planets = np.sum([self.get_force(_body) for _body in bodies if _body != self], 0)
+            self_forces = self.thrust()
+            return planets + self_forces
 
     def get_energy(self):
         return 0.5 * (self.mass * sum(self.v ** 2))
@@ -142,10 +154,14 @@ class solver:
 
         for i in range(0, N):
             fixed_body = bodies[i]
-            lhs[i * 4 + 2:i * 4 + 4] = np.sum([fixed_body.get_forces(_body) for _body in bodies if _body != fixed_body], 0)
+            lhs[i * 4 + 2:i * 4 + 4] = fixed_body.get_forces(*bodies)
 
         return lhs
 
+class engine:
+
+    def linear():
+        return np.array([0, 0])
 
 if __name__ == "__main__":
     plt.close('all')
@@ -155,9 +171,14 @@ if __name__ == "__main__":
     G = 6.67e-11/((1.52e11)**3) * 86400**2 * 5.976e24
 
     # Bodies
+    mercury = body(0.0552, [0.3129 * (1 - 0.0167),0], [0, np.sqrt((mu * (1.0167))/(0.3129 * (1 - 0.0167)))])
     earth = body(1, [1 * (1 - 0.0167), 0], [0, np.sqrt((mu * (1.0167))/(1 * (1 - 0.0167)))])
     sun = body(2e30/5.976e24, [0,0], [0,0])
     jupiter = body(1.8987e27/5.976e24, [5.19 * (1 - 0.0167),0], [0, np.sqrt((mu * (1.0167))/(5.19 * (1 - 0.0167)))])
+
+    # Spaceship
+    ship = body(1e-22, [1.00000000001, 0], [0, 0], can_move = True)
+    ship.set_thrust(engine.linear)
 
     # Setup
     sol = solver('newton', 0.05)
@@ -165,10 +186,10 @@ if __name__ == "__main__":
     b = np.array([1/6,1/3,1/3,1/6])
     c = np.array([0, 0.5, 0.5, 1])
     rk = {'a': a, 'b': b, 'c': c}
-    plot = 10 # np.inf
+    plot = 100 # np.inf
 
     # Run
     if plot < np.inf:
         plt.plot(0,0, 'rx')
         plt.pause(0.01)
-    ret = sol('fwd', 5000, sun, earth, jupiter, rk_params = rk, plot = plot)
+    ret = sol('rk', 5000, sun, earth, mercury, jupiter, rk_params = rk, plot = plot)
