@@ -39,16 +39,17 @@ class body:
 
     def plot(self, fig = None):
         if fig is None:
-            plt.plot(self.x[0], self.x[1], 'go')
+            plt.plot(self.x[0], self.x[1], 'go', markersize = 2)
             plt.pause(0.01)
 
 class ode_algorithm:
 
-    def __init__(self, approach, tau, steps, ode):
+    def __init__(self, approach, tau, steps, ode, plot = np.inf):
         self.approach = approach
         self.ode = ode
         self.tau = tau
         self.steps = steps
+        self.plot = plot
 
     def __call__(self, *bodies):
         func = getattr(self, self.approach)
@@ -56,14 +57,18 @@ class ode_algorithm:
 
     def fwd(self, *bodies):
         N = len(bodies)
+        e = []
         for i in range(self.steps):
             ret = self.ode(*bodies)
             ret_x = np.split(ret[:2*N], N)
             ret_v = np.split(ret[2*N:], N)
             ret = np.concatenate([np.concatenate([x, v]) for x,v in zip(ret_x, ret_v)])
             [_body.update(val[:2], val[2:], self.tau) for val, _body in zip(np.split(ret, N), bodies)]
-            if not i % 1000:
+            if not i % self.plot and i > 0:
                 [_body.plot() for _body in bodies]
+            e.append(np.sum([_body.get_energy() for _body in bodies]) - (G * np.prod([_body.mass for _body in bodies])/bodies[1].get_dist(bodies[0])))
+        plt.figure()
+        plt.plot(e)
 
     def bwd(self, *bodies):
         N = len(bodies)
@@ -76,19 +81,20 @@ class ode_algorithm:
                 ret = np.concatenate([np.concatenate([x, v]) for x,v in zip(ret_x, ret_v)])
                 [_body.update(val[:2] - old_val[:2], val[2:] - old_val[2:], self.tau) for val, old_val, _body in zip(np.split(ret, N), np.split(ret_old, N), bodies)]
                 ret_old = ret
-            if not i % 200:
+            if not i % self.plot:
                 [_body.plot() for _body in bodies]
 
     def martin(self, *bodies):
         for i in range(self.steps):
             bodies[1].martin(self.tau)
-            if not i % 100:
+            if not i % self.plot:
                 bodies[1].plot()
 
     def runge_kutta(self, a, b, c, *bodies):
         N = len(bodies)
         order = len(b)
         k = np.zeros(order, dtype = object)
+        e = []
         for s in range(self.steps):
             for j in range(order):
                 k[j] = self.ode(*bodies)
@@ -103,8 +109,11 @@ class ode_algorithm:
             for i in range(order):
                 final = final + b[i] * k[i]
             [_body.update(val[:2], val[2:], self.tau, True) for val, _body in zip(np.split(final, N), bodies)]
-            if not s % 200:
+            if not s % self.plot and s > 0:
                 [_body.plot() for _body in bodies]
+            e.append(np.sum([_body.get_energy() for _body in bodies]) - (G * np.prod([_body.mass for _body in bodies])/bodies[1].get_dist(bodies[0])))
+        plt.figure()
+        plt.plot(e)
 
 class solver:
 
@@ -112,7 +121,7 @@ class solver:
         self.type = _type
         self.tau = tau
 
-    def __call__(self, approach, steps, *bodies, rk_params = None):
+    def __call__(self, approach, steps, *bodies, rk_params = None, plot = np.inf):
         if approach == 'fwd':
             ode = self.newton_ode_n
         elif approach == 'bwd':
@@ -121,8 +130,8 @@ class solver:
             ode = None
         elif approach == 'rk':
             ode = self.newton_ode_n
-            return ode_algorithm('runge_kutta', self.tau, steps, ode)(rk_params['a'], rk_params['b'], rk_params['c'], *bodies)
-        return ode_algorithm(approach, self.tau, steps, ode)(*bodies)
+            return ode_algorithm('runge_kutta', self.tau, steps, ode, plot = plot)(rk_params['a'], rk_params['b'], rk_params['c'], *bodies)
+        return ode_algorithm(approach, self.tau, steps, ode, plot = plot)(*bodies)
 
     def newton_ode(self, *bodies):
         rhs = np.concatenate([bodies[1].x, bodies[1].v])
@@ -147,6 +156,7 @@ class solver:
 
 
 if __name__ == "__main__":
+    plt.close('all')
     mu = 1.33e20/((1.52e11)**3) * 86400**2
     G = 6.67e-11/((1.52e11)**3) * 86400**2
     earth = body(5.976e24, [1 * (1 - 0.0167), 0], [0, np.sqrt((mu * (1.0167))/(1 * (1 - 0.0167)))])
@@ -157,5 +167,8 @@ if __name__ == "__main__":
     b = np.array([1/6,1/3,1/3,1/6])
     c = np.array([0, 0.5, 0.5, 1])
     rk = {'a': a, 'b': b, 'c': c}
-    ret = sol('rk', 30000, sun, earth, jupiter, rk_params = rk)
-    plt.plot(0,0, 'rx')
+    plot = np.inf
+    if plot < np.inf:
+        plt.plot(0,0, 'rx')
+        plt.pause(0.01)
+    ret = sol('fwd', 1000000, sun, earth, rk_params = rk)
