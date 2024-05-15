@@ -158,17 +158,17 @@ class solver:
 if __name__ == "__main__":
     plt.close('all')
     mu = 1.33e20/((1.52e11)**3) * 86400**2
-    G = 6.67e-11/((1.52e11)**3) * 86400**2
-    earth = body(5.976e24, [1 * (1 - 0.0167), 0], [0, np.sqrt((mu * (1.0167))/(1 * (1 - 0.0167)))])
-    sun = body(2e30, [0,0], [0,0])
-    jupiter = body(1.8987e27, [5.19 * (1 - 0.0167),0], [0, np.sqrt((mu * (1.0167))/(5.19 * (1 - 0.0167)))])
+    G = 6.67e-11/((1.52e11)**3) * 86400**2 * 5.976e24
+    earth = body(1, [1 * (1 - 0.0167), 0], [0, np.sqrt((mu * (1.0167))/(1 * (1 - 0.0167)))])
+    sun = body(2e30/5.976e24, [0,0], [0,0])
+    jupiter = body(1.8987e27/5.976e24, [5.19 * (1 - 0.0167),0], [0, np.sqrt((mu * (1.0167))/(5.19 * (1 - 0.0167)))])
     sol = solver('newton', 0.05)
     a = np.array([[0,0,0,0],[0.5,0,0,0],[0,0.5,0,0],[0,0,1,0]])
     b = np.array([1/6,1/3,1/3,1/6])
     c = np.array([0, 0.5, 0.5, 1])
     rk = {'a': a, 'b': b, 'c': c}
-    plot = np.inf
+    plot = 1000 # np.inf
     if plot < np.inf:
         plt.plot(0,0, 'rx')
         plt.pause(0.01)
-    ret = sol('fwd', 1000000, sun, earth, rk_params = rk)
+    ret = sol('rk', 50000, sun, earth, rk_params = rk, plot = plot)
