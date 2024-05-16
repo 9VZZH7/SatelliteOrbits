@@ -12,6 +12,7 @@ class body:
         self.x_old = np.array(x_0)
         self.v_old = np.array(v_0)
         self.can_move = can_move
+        self.counter = 1
 
     def set_thrust(self, thrust_func):
         self.thrust = thrust_func
@@ -53,6 +54,9 @@ class body:
         if fig is None:
             plt.plot(self.x[0], self.x[1], 'go', markersize = 2)
             plt.pause(0.01)
+            if self.mass == 1:
+                plt.savefig('/home/jannik/Bilder/sat/sim_rk_'+ str(self.counter))
+                self.counter += 1
 
 class ode_algorithm:
 
@@ -192,4 +196,6 @@ if __name__ == "__main__":
     if plot < np.inf:
         plt.plot(0,0, 'rx')
         plt.pause(0.01)
-    ret = sol('rk', 5000, sun, earth, mercury, jupiter, rk_params = rk, plot = plot)
+        plt.xlim(-1.2, 1.2)
+        plt.ylim(-1.2, 1.2)
+    ret = sol('rk', 7700, sun, earth, mercury, rk_params = rk, plot = plot)
