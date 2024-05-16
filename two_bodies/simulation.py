@@ -12,7 +12,6 @@ class body:
         self.x_old = np.array(x_0)
         self.v_old = np.array(v_0)
         self.can_move = can_move
-        self.counter = 1
 
     def set_thrust(self, thrust_func):
         self.thrust = thrust_func
@@ -54,9 +53,6 @@ class body:
         if fig is None:
             plt.plot(self.x[0], self.x[1], 'go', markersize = 2)
             plt.pause(0.01)
-            if self.mass == 1:
-                plt.savefig('/home/jannik/Bilder/sat/sim_rk_'+ str(self.counter))
-                self.counter += 1
 
 class ode_algorithm:
 
@@ -85,6 +81,7 @@ class ode_algorithm:
 
     def bwd(self, *bodies):
         N = len(bodies)
+        e = []
         for i in range(self.steps):
             ret_old = np.zeros(N*4)
             for _ in range(20):
@@ -93,6 +90,9 @@ class ode_algorithm:
                 ret_old = ret
             if not i % self.plot:
                 [_body.plot() for _body in bodies]
+            e.append(np.sum([_body.get_energy() for _body in bodies]) - (G * np.prod([_body.mass for _body in bodies])/bodies[1].get_dist(bodies[0])))
+        plt.figure()
+        plt.plot(e)
 
     def martin(self, *bodies):
         for i in range(self.steps):
@@ -175,7 +175,7 @@ if __name__ == "__main__":
     G = 6.67e-11/((1.52e11)**3) * 86400**2 * 5.976e24
 
     # Bodies
-    mercury = body(0.0552, [0.3129 * (1 - 0.0167),0], [0, np.sqrt((mu * (1.0167))/(0.3129 * (1 - 0.0167)))])
+    mercury = body(0.0552, [0.3129 * (1 - 0.0167),0], [0, np.sqrt((mu * (1.0167))/(0.29 * (1 - 0.0167)))])
     earth = body(1, [1 * (1 - 0.0167), 0], [0, np.sqrt((mu * (1.0167))/(1 * (1 - 0.0167)))])
     sun = body(2e30/5.976e24, [0,0], [0,0])
     jupiter = body(1.8987e27/5.976e24, [5.19 * (1 - 0.0167),0], [0, np.sqrt((mu * (1.0167))/(5.19 * (1 - 0.0167)))])
