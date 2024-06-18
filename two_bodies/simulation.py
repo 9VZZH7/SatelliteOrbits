@@ -52,7 +52,9 @@ class body:
     def plot(self, fig = None):
         if fig is None:
             plt.plot(self.x[0], self.x[1], 'go', markersize = 2)
-            plt.pause(0.01)
+            plt.pause(0.001)
+            if(self.mass == 1):
+                print(self.get_dist(moon))
 
 class ode_algorithm:
 
@@ -171,14 +173,24 @@ if __name__ == "__main__":
     plt.close('all')
 
     # Constants
-    mu = 1.33e20/((1.52e11)**3) * 86400**2
-    G = 6.67e-11/((1.52e11)**3) * 86400**2 * 5.976e24
+    au = 149.6e6
+    m_e = 5.976e24
+    mu = 1.33e20/((au * 1e3)**3) * 86400**2
+    G = 6.67e-11/((au * 1e3)**3) * 86400**2 * m_e
 
     # Bodies
-    mercury = body(0.0552, [0.3129 * (1 - 0.0167),0], [0, np.sqrt((mu * (1.0167))/(0.29 * (1 - 0.0167)))])
+    sun = body(2e30/m_e, [0,0], [0,0])
+    mercury = body(0.0552, [57.9e6/au * (1 - 0.206),0], [0, np.sqrt((mu * (1 + 0.206))/(57.9e6/au * (1 - 0.206)))])
+    venus = body(4.87e24/m_e, [108.2e6/au * (1 - 0.007), 0], [0, np.sqrt((mu * (1 + 0.007))/(108.2e6/au * (1 - 0.007)))])
     earth = body(1, [1 * (1 - 0.0167), 0], [0, np.sqrt((mu * (1.0167))/(1 * (1 - 0.0167)))])
-    sun = body(2e30/5.976e24, [0,0], [0,0])
-    jupiter = body(1.8987e27/5.976e24, [5.19 * (1 - 0.0167),0], [0, np.sqrt((mu * (1.0167))/(5.19 * (1 - 0.0167)))])
+
+    moon = body(0.073e24/m_e, [1 * (1 - 0.0167), 0.384e6/au], [np.sqrt(((3e7/((0.384e9)**3) * 86400**2) * (1.055))/(0.073e24/m_e * (1 - 0.055))), np.sqrt((mu * (1.0167))/(1 * (1 - 0.0167)))])
+
+    mars = body(0.642e24/m_e, [228e6/au * (1 - 0.094), 0], [0, np.sqrt((mu * (1 + 0.094))/(228e6/au * (1 - 0.094)))])
+    jupiter = body(1.8987e27/m_e, [5.19 * (1 - 0.049),0], [0, np.sqrt((mu * (1.049))/(5.19 * (1 - 0.049)))])
+    saturn = body(568e24/m_e, [1432e6/au * (1 - 0.052), 0], [0, np.sqrt((mu * (1 + 0.052))/(1432e6/au * (1 - 0.052)))])
+    uranus = body(86.8e24/m_e, [2867e6/au * (1 - 0.047), 0], [0, np.sqrt((mu * (1 + 0.047))/(2867e6/au * (1 - 0.047)))])
+    neptune = body(102e24/m_e, [4515e6/au * (1 - 0.010), 0], [0, np.sqrt((mu * (1 + 0.010))/(4515e6/au * (1 - 0.010)))])
 
     # Spaceship
     ship = body(1e-22, [1.00000000001, 0], [0, 0], can_move = True)
@@ -193,9 +205,11 @@ if __name__ == "__main__":
     plot = 100 # np.inf
 
     # Run
+    factor = 1.2/1.2
     if plot < np.inf:
         plt.plot(0,0, 'rx')
         plt.pause(0.01)
-        plt.xlim(-1.2, 1.2)
-        plt.ylim(-1.2, 1.2)
-    ret = sol('rk', 7700, sun, earth, mercury, rk_params = rk, plot = plot)
+        plt.xlim(-1.2 * factor, 1.2 * factor)
+        plt.ylim(-1.2 * factor, 1.2 * factor)
+    # ret = sol('rk', 7700, sun, earth, moon, rk_params = rk, plot = plot)
+    ret = sol('rk', 7700, sun, mercury, venus, earth, moon, mars, jupiter, saturn, uranus, neptune, rk_params = rk, plot = plot)
