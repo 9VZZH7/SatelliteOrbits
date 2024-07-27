@@ -1,11 +1,45 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created in May 2024
+
+@author: Jannik Hausladen
+"""
+
 import numpy as np
-from scipy import integrate
 from matplotlib import pyplot as plt
 
 
 class body:
+    '''
+    
+    This class is used to represent all kinds of bodies: Sun, plantes, moons, 
+    space crafts, etc...
+    
+    '''
 
     def __init__(self, mass, x_0, v_0, can_move = False, color = 'k'):
+        '''
+        Each body is initilaized accoring to some values
+
+        Parameters
+        ----------
+        mass : double
+            Mass of the planet, constant.
+        x_0 : vector
+            Initial position.
+        v_0 : vector
+            Initial velocity, shape confrming to x_0.
+        can_move : bool, optional
+            Can this body move on its own, i.e., by thrust. The default is False.
+        color : char/string, optional
+            For plotting reasons, choose color of body. The default is 'k'.
+
+        Returns
+        -------
+        None.
+
+        '''
         self.mass = mass
         self.x = np.array(x_0)
         self.v = np.array(v_0)
@@ -15,19 +49,63 @@ class body:
         self.color = color
 
     def set_thrust(self, thrust_func):
+        '''
+        
+        If required, one can add a thrust function that will be used if 
+        self.can_move == 1.
+        
+        '''
         self.thrust = thrust_func
 
     def get_dist(self, _body):
+        '''
+
+        Parameters
+        ----------
+        _body : body
+            Second body.
+
+        Returns
+        -------
+        double
+            Absolute distance between to bodies.
+
+        '''
         return np.sqrt(sum((self.x - _body.x)**2))
 
     def get_force(self, _body):
+        '''
+
+        Parameters
+        ----------
+        _body : body
+            Second body.
+
+        Returns
+        -------
+        vector
+            Force that the second body exerts one self.
+
+        '''
         return G * _body.mass * (_body.x - self.x) / self.get_dist(_body)**3
 
     def get_forces(self, *bodies):
+        '''
+
+        Parameters
+        ----------
+        *bodies : list of bodies
+            All bodies to evaluate.
+
+        Returns
+        -------
+        vetor
+            Combined force based on all the other given bodies and possibly the
+            own acceleration.
+
+        '''
         if not self.can_move:
             r = [self.get_force(_body) for _body in bodies if _body != self]
-            # if(self.mass == 0.073e24/m_e):
-            #     print(np.sqrt(sum(r[0]**2, 0)), np.sqrt(sum(r[1]**2, 0)))
             return np.sum(r, 0)
         else:
             planets = np.sum([self.get_force(_body) for _body in bodies if _body != self], 0)
@@ -35,9 +113,33 @@ class body:
             return planets + self_forces
 
     def get_energy(self):
+        '''
+        
+        Return the kinetic eneergy of the body.
+        
+        '''
         return 0.5 * (self.mass * sum(self.v ** 2))
 
     def update(self, x, v, tau, use_old = False):
+        '''
+
+        Parameters
+        ----------
+        x : vector
+            New value for x.
+        v : vector
+            New vlaue for v.
+        tau : double
+            Scaling factor, step size.
+        use_old : bool, optional
+            Include the old values of x and v in the calculation, used for 
+            implicit or RK methods. The default is False.
+
+        Returns
+        -------
+        None.
+
+        '''
         self.x = self.x + np.array(x) * tau
         self.v = self.v + np.array(v) * tau
         if use_old:
@@ -47,6 +149,11 @@ class body:
             self.v_old = self.v.copy()
 
     def martin(self, tau):
+        '''
+        
+        Deprecated.
+        
+        '''
         alpha = mu / np.sqrt(sum(self.x ** 2)) ** 3
         x_old = self.x
         v_old = self.v
@@ -57,10 +164,6 @@ class body:
         if fig is None:
             plt.plot(self.x[0], self.x[1], 'o', markersize = 2, color = self.color)
             plt.pause(0.0001)
-            # if(self.mass == 1):
-            #    print(self.get_dist(moon))
-            # if(self.mass == 1.8987e27/m_e):
-            #    print(self.get_dist(ganymed))
 
 class ode_algorithm:
 
